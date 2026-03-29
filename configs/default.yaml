@@ -1,0 +1,179 @@
+# AI Image Detector Configuration
+
+# Data settings
+data:
+  root_dir: "/workspace/data/processed"
+  datasets:
+    - name: "cnndetection"
+      metadata: "cnndetection/cnndetection_metadata.csv"
+      architecture_type: "gan"
+    - name: "diffusionforensics"
+      metadata: "diffusionforensics/metadata.csv"
+      architecture_type: "diffusion"
+    - name: "cifake"
+      metadata: "cifake/cifake_metadata.csv"
+      architecture_type: "diffusion"
+    - name: "synthbuster"
+      metadata: "synthbuster/synthbuster_metadata.csv"
+      architecture_type: "diffusion"
+  
+  # Image settings
+  image_size: 256
+  normalize_mean: [0.485, 0.456, 0.406]
+  normalize_std: [0.229, 0.224, 0.225]
+  
+  # Train/test split by model (for generalization testing)
+  # Models in train_models are used for training
+  # Models in test_models are ONLY used for evaluation (unseen during training)
+  train_models:
+    gan:
+      - "progan"
+      - "stylegan"
+      - "biggan"
+      - "cyclegan"
+      - "stargan"
+      - "gaugan"
+      - "deepfake"
+    diffusion:
+      - "ddpm"
+      - "iddpm"
+      - "ldm"
+      - "pndm"
+      - "sdv1"
+      - "sdv1_new1"
+      - "stable_diffusion_v14"   # CIFAKE fake
+
+  test_models:
+    gan:
+      - "stylegan2"
+      - "seeingdark"
+      - "san"
+      - "crn"
+      - "imle"
+      - "sitd"
+    diffusion:
+      - "sdv2"
+      - "sdv1_new2"
+      - "adm"
+      - "dalle2"
+      - "midjourney"
+      - "if"
+      - "vqdiffusion"
+      - "firefly"       # SynthBuster
+      - "sd_14"         # SynthBuster
+      - "sd_2"          # SynthBuster
+      - "sd_xl"         # SynthBuster
+      - "wukong"        # SynthBuster
+  
+  # Sampling and balancing
+  balance_classes: true
+  samples_per_class: null  # null = use all available
+  val_split: 0.1
+  weighted_sampling: true
+  augmentation:
+    p_flip: 0.5
+    p_rotate: 0.3
+    p_color: 0.4
+    p_blur: 0.3
+    p_jpeg: 0.5
+    p_resize_artifact: 0.5
+    color_jitter_factor: 0.2
+    blur_sigma_range: [0.3, 2.0]
+    jpeg_quality_range: [45, 95]
+    resize_scale_range: [0.45, 0.9]
+  
+  # DataLoader settings
+  batch_size: 32
+  num_workers: 8
+  pin_memory: true
+
+# Model settings
+model:
+  # RGB branch (Swin Transformer)
+  rgb_branch:
+    model_name: "microsoft/swin-tiny-patch4-window7-224"
+    pretrained: true
+    feature_dim: 512
+  
+  # Frequency branch (ResNet)
+  frequency_branch:
+    input_channels: 1
+    feature_dim: 256
+    resnet_type: "resnet18"
+  
+  # Noise branch (ResNet)
+  noise_branch:
+    num_srm_filters: 3
+    feature_dim: 256
+    resnet_type: "resnet18"
+  
+  # Fusion settings
+  fusion:
+    type: "attention"  # options: concat, attention, gated
+    hidden_dim: 512
+    num_heads: 8
+    dropout: 0.3
+  
+  # Classification head
+  classifier:
+    hidden_dims: [256, 128]
+    dropout: 0.5
+    num_classes: 2
+
+# Training settings
+training:
+  epochs: 50
+  learning_rate: 1e-4
+  weight_decay: 1e-5
+  
+  # Optimizer
+  optimizer: "adamw"
+  betas: [0.9, 0.999]
+  
+  # Scheduler
+  scheduler: "cosine"
+  warmup_epochs: 5
+  min_lr: 1e-6
+  
+  # Mixed precision
+  use_amp: true
+  
+  # Gradient settings
+  gradient_clip: 1.0
+  accumulation_steps: 1
+  
+  # Early stopping
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
+    monitor: "val_auc"
+  
+  # Checkpointing
+  checkpoint_dir: "./checkpoints"
+  save_best_only: true
+  save_freq: 5
+  threshold_metric: "balanced_accuracy"
+
+# Evaluation settings
+evaluation:
+  metrics:
+    - "accuracy"
+    - "auc"
+    - "precision"
+    - "recall"
+    - "f1"
+  per_architecture: true
+  generate_confusion_matrix: true
+  generate_roc_curve: true
+
+# Logging
+logging:
+  level: "INFO"
+  tensorboard_dir: "./runs"
+  log_freq: 100  # steps
+
+# Random seed for reproducibility
+seed: 42
+
+# Device settings
+device: "cuda"  # cuda, cpu, or mps

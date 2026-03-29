@@ -1,0 +1,24 @@
+# ── Scripts dependencies ────────────────────────────────────────────────────
+# Install with:  pip install -r scripts/requirements.txt
+
+# Download scripts (all datasets)
+pandas>=2.0.0
+tqdm>=4.65.0
+Pillow>=9.5.0           # image resize in download_cifake.py
+
+# CIFAKE  (Kaggle)
+kaggle>=1.6.0
+
+# CNNDetection / SynthBuster / DiffusionForensics  (HuggingFace)
+huggingface_hub>=0.20.0
+datasets>=2.14.0        # optional: needed for --use-datasets-lib flag
+py7zr>=0.20.0           # needed to extract CNNDetection .7z archives
+
+# generate_manifests.py
+PyYAML>=6.0
+scikit-learn>=1.2.0
+
+# inference.py
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.30.0
