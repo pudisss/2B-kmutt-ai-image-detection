@@ -108,15 +108,24 @@ def _extract_7z_with_progress(first_part: Path, extract_dir: Path) -> None:
 def _extract_archives(cache_dir: Path, max_train: int, max_test: int) -> Path:
     """Extract archives into an 'extracted' subfolder.
 
-    Zip files (test/val sets) are extracted in parallel with progress bars.
-    The large multi-part 7z train archive is skipped if the already-extracted
-    zips already provide enough images to satisfy max_train + max_test.
+    Stops extracting zip files as soon as max_train + max_test images have
+    been extracted — no need to extract every archive in full.
+    The large multi-part 7z train archive is only touched if the zips alone
+    don't provide enough images.
     """
     extract_dir = cache_dir / "extracted"
     extract_dir.mkdir(exist_ok=True)
 
-    # ── zip files (test / val sets — extracted in parallel) ────────────────
+    needed = max_train + max_test
+
+    # ── zip files: extract one at a time and stop early ────────────────────
     for zp in sorted(cache_dir.glob("*.zip")):
+        current_count = _count_images(extract_dir)
+        if current_count >= needed:
+            print(f"  {current_count:,} images extracted — "
+                  f"stopping early (need only {needed:,}).")
+            return extract_dir
+
         marker = extract_dir / f".done_{zp.stem}"
         if marker.exists():
             print(f"  Already extracted: {zp.name}")
@@ -125,11 +134,10 @@ def _extract_archives(cache_dir: Path, max_train: int, max_test: int) -> Path:
         _extract_zip_with_progress(zp, extract_dir)
         marker.touch()
 
-    # ── check if we already have enough images from the zips ───────────────
+    # ── check again after all zips ─────────────────────────────────────────
     current_count = _count_images(extract_dir)
-    needed = max_train + max_test
     if current_count >= needed:
-        print(f"  {current_count:,} images already extracted — "
+        print(f"  {current_count:,} images extracted — "
               f"skipping large .7z train archive (need only {needed:,}).")
         return extract_dir
 
